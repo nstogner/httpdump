@@ -2,46 +2,23 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
-	"time"
 )
 
 func main() {
-	port, ok := os.LookupEnv("PORT")
-	if ok {
-		log.Println("using 'PORT' env variable: ", port)
-	} else {
-		log.Println("no 'PORT' env variable found")
-		log.Println("defaulting to port 4000")
-		port = "4000"
+	port := "8080"
+	if p, ok := os.LookupEnv("PORT"); ok {
+		port = p
 	}
-	log.Println("listening for requests...\n")
-	log.Fatal(http.ListenAndServe(":"+port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("===== NEW REQUEST =====")
-		fmt.Println("time:   ", time.Now())
-		fmt.Println("method: ", r.Method)
-		fmt.Println("path:   ", r.URL.Path)
-		fmt.Println("--- headers ---")
-		for k, vs := range r.Header {
-			for _, v := range vs {
-				fmt.Println(k + ": " + v)
-			}
-		}
-		fmt.Println("--- query params ---")
-		for k, vs := range r.URL.Query() {
-			for _, v := range vs {
-				fmt.Println(k + ": " + v)
-			}
-		}
-		fmt.Println("---  body  ---")
-		body, err := ioutil.ReadAll(r.Body)
+	log.Printf("using PORT %v", port)
+	http.ListenAndServe(":"+port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dmp, err := httputil.DumpRequest(r, true)
 		if err != nil {
-			fmt.Println("ERROR: COULD NOT READ REQUEST BODY!")
+			panic(err)
 		}
-		fmt.Println(string(body))
-		fmt.Println("==== END OF REQUEST ====\n")
-	})))
+		fmt.Println(string(dmp))
+	}))
 }
